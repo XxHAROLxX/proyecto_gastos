@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Gastos Personales</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar {
+            background: rgba(44, 62, 80, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+            border: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--secondary-color), #2980b9);
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .form-control {
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            padding: 12px 15px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+        }
+
+        .alert {
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .dashboard-card {
+            background: linear-gradient(135deg, #ffffff, #f8f9fa);
+            border-left: 5px solid var(--secondary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2.5rem;
+            opacity: 0.8;
+        }
+
+        .login-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .tab-content {
+            padding: 20px;
+        }
+
+        .nav-tabs .nav-link {
+            border-radius: 10px 10px 0 0;
+            margin-right: 5px;
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        #transaccionesTable {
+            font-size: 0.9rem;
+        }
+
+        .btn-sm {
+            border-radius: 15px;
+        }
+
+        .balance-positive {
+            color: var(--success-color);
+            font-weight: bold;
+        }
+
+        .balance-negative {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navegación -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#"><i class="fas fa-wallet me-2"></i>Control de Gastos</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="mostrarSeccion('dashboard')"><i class="fas fa-home me-1"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="mostrarSeccion('transacciones')"><i class="fas fa-plus-circle me-1"></i>Transacciones</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="mostrarSeccion('categorias')"><i class="fas fa-tags me-1"></i>Categorías</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="mostrarSeccion('reportes')"><i class="fas fa-chart-bar me-1"></i>Reportes</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="cerrarSesion()"><i class="fas fa-sign-out-alt me-1"></i>Salir</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Contenedor Principal -->
+    <div class="container mt-4" id="mainContainer">
+        
+        <!-- Sección Login -->
+        <div id="loginSection" class="login-container">
+            <div class="card login-card">
+                <div class="card-header text-center">
+                    <h4><i class="fas fa-wallet me-2"></i>Iniciar Sesión</h4>
+                </div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="loginPassword" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-sign-in-alt me-2"></i>Ingresar
+                        </button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="mostrarRegistro()">¿No tienes cuenta? Regístrate</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Registro -->
+        <div id="registroSection" class="login-container" style="display: none;">
+            <div class="card login-card">
+                <div class="card-header text-center">
+                    <h4><i class="fas fa-user-plus me-2"></i>Crear Cuenta</h4>
+                </div>
+                <div class="card-body">
+                    <form id="registroForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="primerNombre" class="form-label">Primer Nombre</label>
+                                <input type="text" class="form-control" id="primerNombre" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="segundoNombre" class="form-label">Segundo Nombre</label>
+                                <input type="text" class="form-control" id="segundoNombre">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="primerApellido" class="form-label">Primer Apellido</label>
+                                <input type="text" class="form-control" id="primerApellido" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="segundoApellido" class="form-label">Segundo Apellido</label>
+                                <input type="text" class="form-control" id="segundoApellido">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="regEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="regPassword" class="form-label">Contraseña</label>
+                            <input type="password" class="form-control" id="regPassword" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="presupuesto" class="form-label">Presupuesto Mensual</label>
+                            <input type="number" class="form-control" id="presupuesto" step="0.01">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-user-plus me-2"></i>Registrarse
+                        </button>
+                    </form>
+                    <div class="text-center mt-3">
+                        <a href="#" onclick="mostrarLogin()">¿Ya tienes cuenta? Inicia sesión</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard -->
+        <div id="dashboardSection" style="display: none;">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                </div>
+            </div>
+            
+            <!-- Tarjetas de resumen -->
+            <div class="row mb-4">
+                <div class="col-md-3 mb-3">
+                    <div class="card dashboard-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-arrow-up stat-icon text-success"></i>
+                            <h5 class="card-title mt-2">Ingresos</h5>
+                            <h3 class="text-success" id="totalIngresos">$0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card dashboard-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-arrow-down stat-icon text-danger"></i>
+                            <h5 class="card-title mt-2">Gastos</h5>
+                            <h3 class="text-danger" id="totalGastos">$0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card dashboard-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-balance-scale stat-icon text-info"></i>
+                            <h5 class="card-title mt-2">Balance</h5>
+                            <h3 id="balance">$0</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <div class="card dashboard-card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-bullseye stat-icon text-warning"></i>
+                            <h5 class="card-title mt-2">Presupuesto</h5>
+                            <h3 class="text-warning" id="presupuestoMes">$0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Transacciones recientes -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-clock me-2"></i>Transacciones Recientes</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="transaccionesRecientes">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Categoría</th>
+                                            <th>Descripción</th>
+                                            <th>Monto</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Transacciones -->
+        <div id="transaccionesSection" style="display: none;">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2><i class="fas fa-plus-circle me-2"></i>Gestión de Transacciones</h2>
+                </div>
+            </div>
+
+            <!-- Formulario Nueva Transacción -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-plus me-2"></i>Nueva Transacción</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="transaccionForm">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                        <label for="tipoTransaccion" class="form-label">Tipo</label>
+                                        <select class="form-control" id="tipoTransaccion" required>
+                                            <option value="">Seleccionar...</option>
+                                            <option value="ingreso">Ingreso</option>
+                                            <option value="gasto">Gasto</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="categoriaTransaccion" class="form-label">Categoría</label>
+                                        <select class="form-control" id="categoriaTransaccion" required></select>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="montoTransaccion" class="form-label">Monto</label>
+                                        <input type="number" class="form-control" id="montoTransaccion" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="fechaTransaccion" class="form-label">Fecha</label>
+                                        <input type="date" class="form-control" id="fechaTransaccion" required>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="descripcionTransaccion" class="form-label">Descripción</label>
+                                        <textarea class="form-control" id="descripcionTransaccion" rows="3"></textarea>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Guardar Transacción
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Transacciones -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list me-2"></i>Mis Transacciones</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="transaccionesTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Tipo</th>
+                                            <th>Categoría</th>
+                                            <th>Descripción</th>
+                                            <th>Monto</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Categorías -->
+        <div id="categoriasSection" style="display: none;">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2><i class="fas fa-tags me-2"></i>Gestión de Categorías</h2>
+                </div>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-plus me-2"></i>Nueva Categoría</h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="categoriaForm">
+                                <div class="mb-3">
+                                    <label for="nombreCategoria" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="nombreCategoria" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="descripcionCategoria" class="form-label">Descripción</label>
+                                    <textarea class="form-control" id="descripcionCategoria" rows="3"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="colorCategoria" class="form-label">Color</label>
+                                    <input type="color" class="form-control" id="colorCategoria" value="#007bff">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i>Guardar Categoría
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-list me-2"></i>Mis Categorías</h5>
+                        </div>
+                        <div class="card-body">
+                            <div id="categoriasList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Reportes -->
+        <div id="reportesSection" style="display: none;">
+            <div class="row mb-4">
+                <div class="col">
+                    <h2><i class="fas fa-chart-bar me-2"></i>Reportes</h2>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-pie fa-5x text-muted mb-3"></i>
+                            <h4>Reportes y Gráficos</h4>
+                            <p class="text-muted">Sección en desarrollo - Aquí se mostrarán gráficos detallados</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let usuarioActual = null;
+        let categorias = [];
+        let transacciones = [];
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Establecer fecha actual por defecto
+            document.getElementById('fechaTransaccion').value = new Date().toISOString().split('T')[0];
+            
+            // Event listeners
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('registroForm').addEventListener('submit', handleRegistro);
+            document.getElementById('transaccionForm').addEventListener('submit', handleNuevaTransaccion);
+            document.getElementById('categoriaForm').addEventListener('submit', handleNuevaCategoria);
+        });
+
+        // Funciones de navegación
+        function mostrarSeccion(seccion) {
+            // Ocultar todas las secciones
+            const secciones = ['loginSection', 'registroSection', 'dashboardSection', 'transaccionesSection', 'categoriasSection', 'reportesSection'];
+            secciones.forEach(s => {
+                document.getElementById(s).style.display = 'none';
+            });
+            
+            // Mostrar la sección seleccionada
+            document.getElementById(seccion + 'Section').style.display = 'block';
+            
+            // Cargar datos según la sección
+            switch(seccion) {
+                case 'dashboard':
+                    cargarDashboard();
+                    break;
+                case 'transacciones':
+                    cargarCategorias();
+                    cargarTransacciones();
+                    break;
+                case 'categorias':
+                    cargarCategoriasGestion();
+                    break;
+            }
+        }
+
+        function mostrarLogin() {
+            document.getElementById('registroSection').style.display = 'none';
+            document.getElementById('loginSection').style.display = 'block';
+        }
+
+        function mostrarRegistro() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('registroSection').style.display = 'block';
+        }
+
+        // Simulación de autenticación (en la versión real sería con PHP y MySQL)
+        function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Simulación de login exitoso
+            usuarioActual = {
+                id: 1,
+                nombre: 'Juan Carlos Pérez González',
+                email: email,
+                presupuesto: 2000000
+            };
+            
+            mostrarAlerta('Bienvenido ' + usuarioActual.nombre, 'success');
+            mostrarSeccion('dashboard');
+        }
+
+        function handleRegistro(e) {
+            e.preventDefault();
+            mostrarAlerta('Usuario registrado exitosamente', 'success');
+            mostrarLogin();
+        }
+
+        function handleNuevaTransaccion(e) {
+            e.preventDefault();
+            const tipo = document.getElementById('tipoTransaccion').value;
+            const categoria = document.getElementById('categoriaTransaccion').value;
+            const monto = parseFloat(document.getElementById('montoTransaccion').value);
+            const fecha = document.getElementById('fechaTransaccion').value;
+            const descripcion = document.getElementById('descripcionTransaccion').value;
+            
+            // Simular guardar transacción
+            transacciones.unshift({
+                id: Date.now(),
+                tipo: tipo,
+                categoria: categoria,
+                monto: monto,
+                fecha: fecha,
+                descripcion: descripcion
+            });
+            
+            mostrarAlerta('Transacción guardada exitosamente', 'success');
+            document.getElementById('transaccionForm').reset();
+            document.getElementById('fechaTransaccion').value = new Date().toISOString().split('T')[0];
+            cargarTransacciones();
+        }
+
+        function handleNuevaCategoria(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nombreCategoria').value;
+            const descripcion = document.getElementById('descripcionCategoria').value;
+            const color = document.getElementById('colorCategoria').value;
+            
+            categorias.push({
+                id: Date.now(),
+                nombre: nombre,
+                descripcion: descripcion,
+                color: color
+            });
+            
+            mostrarAlerta('Categoría creada exitosamente', 'success');
+            document.getElementById('categoriaForm').reset();
+            cargarCategoriasGestion();
+            cargarCategorias();
+        }
+
+        // Funciones de carga de datos
+        function cargarDashboard() {
+            // Datos simulados
+            document.getElementById('totalIngresos').textContent = '$3,500,000';
+            document.getElementById('totalGastos').textContent = '$1,245,000';
+            document.getElementById('balance').textContent = '$2,255,000';
+            document.getElementById('balance').className = 'balance-positive';
+            document.getElementById('presupuestoMes').textContent = '$2,000,000';
+            
+            // Cargar transacciones recientes simuladas
+            const tbody = document.querySelector('#transaccionesRecientes tbody');
+            tbody.innerHTML = `
+                <tr>
+                    <td>2025-07-31</td>
+                    <td><span class="badge bg-success">Ingreso</span></td>
+                    <td>Salario</td>
+                    <td>Salario mensual</td>
+                    <td class="text-success">$3,000,000</td>
+                </tr>
+                <tr>
+                    <td>2025-07-30</td>
+                    <td><span class="badge bg-danger">Gasto</span></td>
+                    <td>Alimentación</td>
+                    <td>Compras supermercado</td>
+                    <td class="text-danger">-$150,000</td>
+                </tr>
+            `;
+        }
+
+        function cargarCategorias() {
+            const select = document.getElementById('categoriaTransaccion');
+            select.innerHTML = '<option value="">Seleccionar...</option>';
+            
+            // Categorías por defecto
+            const categoriasDefault = [
+                {id: 1, nombre: 'Alimentación'},
+                {id: 2, nombre: 'Transporte'},
+                {id: 3, nombre: 'Entretenimiento'},
+                {id: 4, nombre: 'Salud'},
+                {id: 5, nombre: 'Salario'},
+                {id: 6, nombre: 'Freelance'}
+            ];
+            
+            [...categoriasDefault, ...categorias].forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.id;
+                option.textContent = cat.nombre;
+                select.appendChild(option);
+            });
+        }
+
+        function cargarTransacciones() {
+            const tbody = document.querySelector('#transaccionesTable tbody');
+            tbody.innerHTML = '';
+            
+            transacciones.forEach(transaccion => {
+                const row = tbody.insertRow();
+                const tipoBadge = transaccion.tipo === 'ingreso' ? 'bg-success' : 'bg-danger';
+                const montoClass = transaccion.tipo === 'ingreso' ? 'text-success' : 'text-danger';
+                const montoPrefix = transaccion.tipo === 'ingreso' ? '+' : '-';
+                
+                row.innerHTML = `
+                    <td>${transaccion.fecha}</td>
+                    <td><span class="badge ${tipeBadge}">${transaccion.tipo}</span></td>
+                    <td>${transaccion.categoria}</td>
+                    <td>${transaccion.descripcion}</td>
+                    <td class="${montoClass}">${montoPrefix}$${transaccion.monto.toLocaleString()}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarTransaccion(${transaccion.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+            });
+        }
+
+        function cargarCategoriasGestion() {
+            const container = document.getElementById('categoriasList');
+            container.innerHTML = '';
+            
+            categorias.forEach(categoria => {
+                const item = document.createElement('div');
+                item.className = 'mb-2 p-2 border rounded';
+                item.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="badge" style="background-color: ${categoria.color}">${categoria.nombre}</span>
+                            <small class="text-muted d-block">${categoria.descripcion}</small>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="eliminarCategoria(${categoria.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        // Funciones auxiliares
+        function eliminarTransaccion(id) {
+            if (confirm('¿Estás seguro de eliminar esta transacción?')) {
+                transacciones = transacciones.filter(t => t.id !== id);
+                cargarTransacciones();
+                mostrarAlerta('Transacción eliminada', 'info');
+            }
+        }
+
+        function eliminarCategoria(id) {
+            if (confirm('¿Estás seguro de eliminar esta categoría?')) {
+                categorias = categorias.filter(c => c.id !== id);
+                cargarCategoriasGestion();
+                mostrarAlerta('Categoría eliminada', 'info');
+            }
+        }
+
+        function mostrarAlerta(mensaje, tipo) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${tipo} alert-dismissible fade show`;
+            alertDiv.innerHTML = `
+                ${mensaje}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            const container = document.getElementById('mainContainer');
+            container.insertBefore(alertDiv, container.firstChild);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function cerrarSesion() {
+            if (confirm('¿Estás seguro de cerrar sesión?')) {
+                usuarioActual = null;
+                categorias = [];
+                transacciones = [];
+                document.getElementById('loginForm').reset();
+                mostrarSeccion('login');
+            }
+        }
+
+        // Funciones para filtros y búsquedas
+        function filtrarTransacciones(tipo) {
+            // Implementar filtrado por tipo de transacción
+            console.log('Filtrar por:', tipo);
+        }
+
+        function buscarTransacciones() {
+            // Implementar búsqueda de transacciones
+            console.log('Buscar transacciones');
+        }
+    </script>
+</body>
+</html>
